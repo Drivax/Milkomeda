@@ -16,7 +16,6 @@ Units: kpc, M_sun, yr
 
 from __future__ import annotations
 import numpy as np
-from octree import compute_accelerations
 from octree import compute_accelerations, compute_accelerations_direct
 
 

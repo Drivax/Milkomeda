@@ -47,6 +47,10 @@ def parse_args() -> argparse.Namespace:
                    help="Save snapshot every N steps (default 10)")
     p.add_argument("--seed", type=int, default=42,
                    help="Random seed for initial conditions (default 42)")
+    p.add_argument("--andromeda-radial-kms", type=float, default=-110.0,
+                   help="Andromeda radial velocity in km/s (default -110.0)")
+    p.add_argument("--andromeda-transverse-kms", type=float, default=17.0,
+                   help="Andromeda transverse velocity in km/s (default 17.0)")
     p.add_argument("--validate", action="store_true",
                    help="Compute energy at each snapshot for validation")
     p.add_argument("--method", type=str, default="auto",
@@ -71,6 +75,8 @@ def create_output_file(path: str, N_total: int, n_snapshots: int,
     meta.attrs["theta"] = args.theta
     meta.attrs["softening_kpc"] = args.softening
     meta.attrs["snapshot_every"] = args.snapshot_every
+    meta.attrs["andromeda_radial_kms"] = args.andromeda_radial_kms
+    meta.attrs["andromeda_transverse_kms"] = args.andromeda_transverse_kms
 
     f.create_dataset("pos",  shape=(n_snapshots, N_total, 3), dtype="float32")
     f.create_dataset("vel",  shape=(n_snapshots, N_total, 3), dtype="float32")
@@ -83,6 +89,10 @@ def create_output_file(path: str, N_total: int, n_snapshots: int,
         f.create_dataset("E_tot", shape=(n_snapshots,), dtype="float64")
 
     return f
+
+
+def _mass_weighted_com(pos: np.ndarray, mass: np.ndarray) -> np.ndarray:
+    return (mass[:, None] * pos).sum(axis=0) / (mass.sum() + 1e-300)
 
 
 def write_snapshot(f: h5py.File, snap_idx: int, pos: np.ndarray,
@@ -116,14 +126,24 @@ def main() -> None:
     print(f"  theta         : {args.theta}")
     print(f"  softening     : {args.softening} kpc")
     print(f"  Method        : {args.method}")
+    print(f"  M31 v_rad     : {args.andromeda_radial_kms:.2f} km/s")
+    print(f"  M31 v_trans   : {args.andromeda_transverse_kms:.2f} km/s")
     print(f"  Output        : {args.output}")
     print("=" * 60)
 
     # --- Build initial conditions ---
     print("\n[1/4] Building initial conditions...")
     t0 = time.perf_counter()
-    pos, vel, mass = build_initial_conditions(args.N, seed=args.seed)
+    pos, vel, mass = build_initial_conditions(
+        args.N,
+        seed=args.seed,
+        andromeda_radial_kms=args.andromeda_radial_kms,
+        andromeda_transverse_kms=args.andromeda_transverse_kms,
+    )
     N_total = pos.shape[0]
+    N_half = N_total // 2
+    mass_mw = mass[:N_half]
+    mass_and = mass[N_half:]
     print(f"      {N_total:,} particles initialised in {time.perf_counter()-t0:.1f}s")
 
     # --- Decide force method ---
@@ -162,6 +182,15 @@ def main() -> None:
     print("[4/4] Running simulation...")
     t_sim = 0.0
     E0_total = KE0 + PE0
+    # Track summary metrics for post-run analysis.
+    com_mw = _mass_weighted_com(pos[:N_half], mass_mw)
+    com_and = _mass_weighted_com(pos[N_half:], mass_and)
+    separation = np.linalg.norm(com_and - com_mw)
+    min_separation_kpc = float(separation)
+    min_separation_time_gyr = 0.0
+    close_approach_threshold_kpc = 100.0
+    first_close_approach_time_gyr = -1.0
+    max_energy_drift_pct = 0.0
 
     with tqdm(total=args.steps, unit="step", ncols=72) as pbar:
         for step in range(1, args.steps + 1):
@@ -186,15 +215,48 @@ def main() -> None:
                     KE, PE = compute_energy(pos, vel, mass, softening=args.softening)
                     E_now = KE + PE
                     drift_pct = abs((E_now - E0_total) / (E0_total + 1e-300)) * 100
+                    max_energy_drift_pct = max(max_energy_drift_pct, float(drift_pct))
                     pbar.set_postfix({"E_drift%": f"{drift_pct:.3f}"})
+
+                com_mw = _mass_weighted_com(pos[:N_half], mass_mw)
+                com_and = _mass_weighted_com(pos[N_half:], mass_and)
+                separation = float(np.linalg.norm(com_and - com_mw))
+                t_gyr = t_sim / 1e9
+                if separation < min_separation_kpc:
+                    min_separation_kpc = separation
+                    min_separation_time_gyr = t_gyr
+                if first_close_approach_time_gyr < 0.0 and separation <= close_approach_threshold_kpc:
+                    first_close_approach_time_gyr = t_gyr
+
                 write_snapshot(hf, snap_idx, pos, vel, t_sim, KE, PE, args.validate)
                 snap_idx += 1
 
             pbar.update(1)
 
+    meta = hf["metadata"]
+    meta.attrs["min_com_separation_kpc"] = min_separation_kpc
+    meta.attrs["min_com_separation_time_gyr"] = min_separation_time_gyr
+    meta.attrs["close_approach_threshold_kpc"] = close_approach_threshold_kpc
+    meta.attrs["first_close_approach_time_gyr"] = first_close_approach_time_gyr
+    if args.validate:
+        meta.attrs["max_energy_drift_pct"] = max_energy_drift_pct
+
     hf.close()
     print(f"\nDone. Simulation saved to '{args.output}'.")
     print(f"Simulated {t_sim/1e9:.3f} Gyr of cosmic time.")
+    print(f"Minimum COM separation: {min_separation_kpc:.2f} kpc at t={min_separation_time_gyr:.3f} Gyr")
+    if first_close_approach_time_gyr >= 0.0:
+        print(
+            f"First COM close approach (<={close_approach_threshold_kpc:.0f} kpc): "
+            f"t={first_close_approach_time_gyr:.3f} Gyr"
+        )
+    else:
+        print(
+            f"No COM close approach <= {close_approach_threshold_kpc:.0f} kpc "
+            "within simulated time span"
+        )
+    if args.validate:
+        print(f"Max energy drift across snapshots: {max_energy_drift_pct:.4f}%")
 
 
 if __name__ == "__main__":

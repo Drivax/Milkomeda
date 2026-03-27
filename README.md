@@ -110,3 +110,32 @@ python visualize.py --input output_today_to_collision.h5 --output milkomeda_toda
 python simulate_100_center_trajectories.py --runs 100 --N 40 --steps 200 --dt 5e6 --sample-every 5 --method direct --output trajectories_100.png
 ```
 
+### Uncertainty sweep over Andromeda transverse velocity
+
+
+```bash
+python sweep_transverse_velocity.py --vtrans-min 0 --vtrans-max 80 --vtrans-count 9 --runs-per-v 24 --N 120 --steps 500 --dt 5e6 --sample-every 5 --method auto --output-prefix vtrans_sweep
+```
+
+Generated outputs:
+- `vtrans_sweep_summary.csv` (percentile summary per velocity)
+- `vtrans_sweep_raw.npz` (raw sampled traces and metrics)
+- `vtrans_sweep_bands.png` (publishable-style uncertainty bands)
+
+### New velocity controls
+
+Both `simulate.py` and `simulate_100_center_trajectories.py` now support:
+- `--andromeda-radial-kms` (default `-110.0`)
+- `--andromeda-transverse-kms` (default `17.0`)
+
+This replaces the previous single hardcoded transverse speed assumption.
+
+### Validation metrics saved to simulation output
+
+`simulate.py` now records run-level summary metrics into HDF5 metadata:
+- minimum mass-weighted COM separation (`min_com_separation_kpc`)
+- time of minimum separation (`min_com_separation_time_gyr`)
+- first close-approach time at threshold 100 kpc (`first_close_approach_time_gyr`)
+- maximum energy drift percent (`max_energy_drift_pct`, when `--validate` is enabled)
+
+

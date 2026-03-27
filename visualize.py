@@ -117,6 +117,7 @@ def main() -> None:
     with h5py.File(args.input, "r") as hf:
         pos_all = hf["pos"][:]        # (n_snaps, N, 3) float32
         times = hf["time"][:]         # (n_snaps,)
+        mass = hf["mass"][:]
         N_total = hf["mass"].shape[0]
         N_half = N_total // 2
 
@@ -130,8 +131,12 @@ def main() -> None:
     ax_i, ax_j, xlabel, ylabel = _axis_indices(args.view)
 
     # Centers of mass over time (projected to selected view) for trajectory overlay
-    com_mw = pos_all[:, :N_half, :].mean(axis=1)
-    com_and = pos_all[:, N_half:, :].mean(axis=1)
+    mw_mass = mass[:N_half]
+    and_mass = mass[N_half:]
+    mw_mass_norm = mw_mass / (mw_mass.sum() + 1e-300)
+    and_mass_norm = and_mass / (and_mass.sum() + 1e-300)
+    com_mw = (pos_all[:, :N_half, :] * mw_mass_norm[None, :, None]).sum(axis=1)
+    com_and = (pos_all[:, N_half:, :] * and_mass_norm[None, :, None]).sum(axis=1)
 
     print(f"  Snapshots : {n_snaps}")
     print(f"  Particles : {N_total:,}")

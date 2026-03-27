@@ -251,7 +251,12 @@ def build_galaxy(params: GalaxyParams, N_total: int, center: np.ndarray,
     return {"pos": pos, "vel": vel, "mass": mass}
 
 
-def build_initial_conditions(N: int, seed: int = 0) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def build_initial_conditions(
+    N: int,
+    seed: int = 0,
+    andromeda_radial_kms: float = -110.0,
+    andromeda_transverse_kms: float = 17.0,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Build combined initial conditions for MW + Andromeda collision.
 
@@ -262,15 +267,15 @@ def build_initial_conditions(N: int, seed: int = 0) -> tuple[np.ndarray, np.ndar
     mass : (2N,)   float64, particle masses in M_sun
     """
     # Andromeda is ~785 kpc away. Place MW at origin, Andromeda along +x.
-    # Radial velocity: -110 km/s (approaching)
-    # Transverse velocity: +17 km/s (van der Marel et al. 2012)
+    # Radial velocity default: -110 km/s (approaching)
+    # Transverse velocity default: +17 km/s (van der Marel et al. 2012)
     mw_center = np.array([0.0, 0.0, 0.0])
     mw_vel = np.array([0.0, 0.0, 0.0])  # MW at rest in COM frame
 
     and_center = np.array([785.0, 0.0, 0.0])
     # Convert km/s → kpc/yr
-    v_rad = -110.0 * KMS_TO_KPCYR   # approaching along -x
-    v_trans = 17.0 * KMS_TO_KPCYR   # transverse along +y
+    v_rad = andromeda_radial_kms * KMS_TO_KPCYR
+    v_trans = andromeda_transverse_kms * KMS_TO_KPCYR
     and_vel = np.array([v_rad, v_trans, 0.0])
 
     # MW disk inclination ~77°

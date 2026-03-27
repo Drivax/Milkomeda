@@ -52,6 +52,10 @@ def parse_args() -> argparse.Namespace:
                    help="Force method (default auto)")
     p.add_argument("--seed", type=int, default=42,
                    help="Base random seed (run i uses seed+i)")
+    p.add_argument("--andromeda-radial-kms", type=float, default=-110.0,
+                   help="Andromeda radial velocity in km/s (default -110.0)")
+    p.add_argument("--andromeda-transverse-kms", type=float, default=17.0,
+                   help="Andromeda transverse velocity in km/s (default 17.0)")
     p.add_argument("--output", type=str, default="trajectories_100.png",
                    help="Output image path (default trajectories_100.png)")
     p.add_argument("--dpi", type=int, default=180,
@@ -68,6 +72,8 @@ def run_one_simulation(
     theta: float,
     method: str,
     seed: int,
+    andromeda_radial_kms: float,
+    andromeda_transverse_kms: float,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Run one simulation and return sampled COM trajectories.
 
@@ -77,9 +83,16 @@ def run_one_simulation(
     mw_xy : (S,2) Milky Way COM trajectory in x-y
     m31_xy: (S,2) Andromeda COM trajectory in x-y
     """
-    pos, vel, mass = build_initial_conditions(N, seed=seed)
+    pos, vel, mass = build_initial_conditions(
+        N,
+        seed=seed,
+        andromeda_radial_kms=andromeda_radial_kms,
+        andromeda_transverse_kms=andromeda_transverse_kms,
+    )
     n_total = pos.shape[0]
     n_half = n_total // 2
+    mass_mw = mass[:n_half]
+    mass_m31 = mass[n_half:]
 
     use_direct = (
         method == "direct"
@@ -99,8 +112,8 @@ def run_one_simulation(
     # t = 0 sample
     sample_idx = 0
     t_gyr[sample_idx] = 0.0
-    mw_xy[sample_idx] = pos[:n_half, :2].mean(axis=0)
-    m31_xy[sample_idx] = pos[n_half:, :2].mean(axis=0)
+    mw_xy[sample_idx] = (mass_mw[:, None] * pos[:n_half, :2]).sum(axis=0) / (mass_mw.sum() + 1e-300)
+    m31_xy[sample_idx] = (mass_m31[:, None] * pos[n_half:, :2]).sum(axis=0) / (mass_m31.sum() + 1e-300)
     sample_idx += 1
 
     t_sim = 0.0
@@ -123,8 +136,8 @@ def run_one_simulation(
 
         if step % sample_every == 0:
             t_gyr[sample_idx] = t_sim / 1e9
-            mw_xy[sample_idx] = pos[:n_half, :2].mean(axis=0)
-            m31_xy[sample_idx] = pos[n_half:, :2].mean(axis=0)
+            mw_xy[sample_idx] = (mass_mw[:, None] * pos[:n_half, :2]).sum(axis=0) / (mass_mw.sum() + 1e-300)
+            m31_xy[sample_idx] = (mass_m31[:, None] * pos[n_half:, :2]).sum(axis=0) / (mass_m31.sum() + 1e-300)
             sample_idx += 1
 
     return t_gyr, mw_xy, m31_xy
@@ -143,6 +156,8 @@ def main() -> None:
     print(f"duration(Gyr): {args.steps * args.dt / 1e9:.2f}")
     print(f"sample every : {args.sample_every}")
     print(f"method       : {args.method}")
+    print(f"M31 v_rad    : {args.andromeda_radial_kms:.2f} km/s")
+    print(f"M31 v_trans  : {args.andromeda_transverse_kms:.2f} km/s")
     print(f"output       : {args.output}")
     print("=" * 64)
 
@@ -162,6 +177,8 @@ def main() -> None:
             theta=args.theta,
             method=args.method,
             seed=seed_i,
+            andromeda_radial_kms=args.andromeda_radial_kms,
+            andromeda_transverse_kms=args.andromeda_transverse_kms,
         )
         if t_ref is None:
             t_ref = t_gyr
