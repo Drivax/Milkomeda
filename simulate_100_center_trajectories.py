@@ -17,6 +17,8 @@ from __future__ import annotations
 import argparse
 import time
 
+import matplotlib
+matplotlib.use("Agg")  # headless rendering for CI/smoke environments
 import matplotlib.pyplot as plt
 import numpy as np
 from tqdm import tqdm
