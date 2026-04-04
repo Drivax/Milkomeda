@@ -2,7 +2,7 @@
 
 This project simulates the future interaction between the Milky Way and Andromeda using Newtonian gravity.
 
-The goal is simple:
+The goal is :
 - start from today's approximate positions and velocities,
 - evolve both galaxies forward in time,
 - visualize their trajectories and collision.

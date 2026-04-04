@@ -18,7 +18,7 @@ import h5py
 import numpy as np
 from tqdm import tqdm
 
-from galaxy import build_initial_conditions
+from galaxy import build_initial_conditions, get_scenario_names, resolve_andromeda_velocities
 from integrator import leapfrog_step, leapfrog_step_direct, compute_energy
 from octree import compute_accelerations, compute_accelerations_direct
 
@@ -47,10 +47,13 @@ def parse_args() -> argparse.Namespace:
                    help="Save snapshot every N steps (default 10)")
     p.add_argument("--seed", type=int, default=42,
                    help="Random seed for initial conditions (default 42)")
-    p.add_argument("--andromeda-radial-kms", type=float, default=-110.0,
-                   help="Andromeda radial velocity in km/s (default -110.0)")
-    p.add_argument("--andromeda-transverse-kms", type=float, default=17.0,
-                   help="Andromeda transverse velocity in km/s (default 17.0)")
+    p.add_argument("--scenario", type=str, default="baseline",
+                   choices=get_scenario_names(),
+                   help="Named initial-condition preset (default baseline)")
+    p.add_argument("--andromeda-radial-kms", type=float, default=None,
+                   help="Override scenario radial velocity in km/s")
+    p.add_argument("--andromeda-transverse-kms", type=float, default=None,
+                   help="Override scenario transverse velocity in km/s")
     p.add_argument("--validate", action="store_true",
                    help="Compute energy at each snapshot for validation")
     p.add_argument("--method", type=str, default="auto",
@@ -65,7 +68,10 @@ def parse_args() -> argparse.Namespace:
 # ---------------------------------------------------------------------------
 
 def create_output_file(path: str, N_total: int, n_snapshots: int,
-                       args: argparse.Namespace) -> h5py.File:
+                       args: argparse.Namespace,
+                       scenario_name: str,
+                       andromeda_radial_kms: float,
+                       andromeda_transverse_kms: float) -> h5py.File:
     f = h5py.File(path, "w")
     meta = f.create_group("metadata")
     meta.attrs["N_per_galaxy"] = args.N
@@ -75,8 +81,9 @@ def create_output_file(path: str, N_total: int, n_snapshots: int,
     meta.attrs["theta"] = args.theta
     meta.attrs["softening_kpc"] = args.softening
     meta.attrs["snapshot_every"] = args.snapshot_every
-    meta.attrs["andromeda_radial_kms"] = args.andromeda_radial_kms
-    meta.attrs["andromeda_transverse_kms"] = args.andromeda_transverse_kms
+    meta.attrs["scenario"] = scenario_name
+    meta.attrs["andromeda_radial_kms"] = andromeda_radial_kms
+    meta.attrs["andromeda_transverse_kms"] = andromeda_transverse_kms
 
     f.create_dataset("pos",  shape=(n_snapshots, N_total, 3), dtype="float32")
     f.create_dataset("vel",  shape=(n_snapshots, N_total, 3), dtype="float32")
@@ -114,6 +121,11 @@ def write_snapshot(f: h5py.File, snap_idx: int, pos: np.ndarray,
 
 def main() -> None:
     args = parse_args()
+    scenario_name, radial_kms, transverse_kms = resolve_andromeda_velocities(
+        args.scenario,
+        andromeda_radial_kms=args.andromeda_radial_kms,
+        andromeda_transverse_kms=args.andromeda_transverse_kms,
+    )
 
     print("=" * 60)
     print("  Milkomeda — Galaxy Collision Simulator")
@@ -126,8 +138,9 @@ def main() -> None:
     print(f"  theta         : {args.theta}")
     print(f"  softening     : {args.softening} kpc")
     print(f"  Method        : {args.method}")
-    print(f"  M31 v_rad     : {args.andromeda_radial_kms:.2f} km/s")
-    print(f"  M31 v_trans   : {args.andromeda_transverse_kms:.2f} km/s")
+    print(f"  Scenario      : {scenario_name}")
+    print(f"  M31 v_rad     : {radial_kms:.2f} km/s")
+    print(f"  M31 v_trans   : {transverse_kms:.2f} km/s")
     print(f"  Output        : {args.output}")
     print("=" * 60)
 
@@ -137,8 +150,9 @@ def main() -> None:
     pos, vel, mass = build_initial_conditions(
         args.N,
         seed=args.seed,
-        andromeda_radial_kms=args.andromeda_radial_kms,
-        andromeda_transverse_kms=args.andromeda_transverse_kms,
+        scenario=scenario_name,
+        andromeda_radial_kms=radial_kms,
+        andromeda_transverse_kms=transverse_kms,
     )
     N_total = pos.shape[0]
     N_half = N_total // 2
@@ -165,7 +179,15 @@ def main() -> None:
     # --- Set up output ---
     n_snaps = args.steps // args.snapshot_every + 1
     print(f"[3/4] Opening output file '{args.output}' ({n_snaps} snapshots)...")
-    hf = create_output_file(args.output, N_total, n_snaps, args)
+    hf = create_output_file(
+        args.output,
+        N_total,
+        n_snaps,
+        args,
+        scenario_name=scenario_name,
+        andromeda_radial_kms=radial_kms,
+        andromeda_transverse_kms=transverse_kms,
+    )
     hf["mass"][:] = mass
 
     # Write t=0 snapshot

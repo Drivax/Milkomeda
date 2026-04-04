@@ -18,6 +18,7 @@ Physical constants:
 
 import numpy as np
 from dataclasses import dataclass
+from typing import Optional
 
 # Gravitational constant in kpc^3 M_sun^-1 yr^-2
 # Derived from G = 4.3009e-6 kpc (km/s)^2 M_sun^-1 and
@@ -67,6 +68,56 @@ ANDROMEDA = GalaxyParams(
     b_disk=0.5,
     r_trunc=250.0,
 )
+
+
+# Named Andromeda velocity presets (km/s) for quick scenario demos.
+SCENARIO_PRESETS = {
+    "baseline": {
+        "andromeda_radial_kms": -110.0,
+        "andromeda_transverse_kms": 17.0,
+    },
+    "fast-m31": {
+        "andromeda_radial_kms": -140.0,
+        "andromeda_transverse_kms": 35.0,
+    },
+    "low-transverse": {
+        "andromeda_radial_kms": -110.0,
+        "andromeda_transverse_kms": 8.0,
+    },
+    "head-on": {
+        "andromeda_radial_kms": -110.0,
+        "andromeda_transverse_kms": 0.0,
+    },
+}
+
+
+def get_scenario_names() -> list[str]:
+    """Return supported scenario preset names."""
+    return list(SCENARIO_PRESETS.keys())
+
+
+def resolve_andromeda_velocities(
+    scenario: str,
+    andromeda_radial_kms: Optional[float] = None,
+    andromeda_transverse_kms: Optional[float] = None,
+) -> tuple[str, float, float]:
+    """Resolve final Andromeda radial/transverse velocities from a preset + overrides."""
+    scenario_key = scenario.strip().lower()
+    if scenario_key not in SCENARIO_PRESETS:
+        options = ", ".join(get_scenario_names())
+        raise ValueError(f"Unknown scenario '{scenario}'. Choose one of: {options}")
+
+    preset = SCENARIO_PRESETS[scenario_key]
+    radial = preset["andromeda_radial_kms"]
+    transverse = preset["andromeda_transverse_kms"]
+
+    # Manual CLI values override preset defaults when provided.
+    if andromeda_radial_kms is not None:
+        radial = float(andromeda_radial_kms)
+    if andromeda_transverse_kms is not None:
+        transverse = float(andromeda_transverse_kms)
+
+    return scenario_key, radial, transverse
 
 
 # ---------------------------------------------------------------------------
@@ -254,8 +305,9 @@ def build_galaxy(params: GalaxyParams, N_total: int, center: np.ndarray,
 def build_initial_conditions(
     N: int,
     seed: int = 0,
-    andromeda_radial_kms: float = -110.0,
-    andromeda_transverse_kms: float = 17.0,
+    scenario: str = "baseline",
+    andromeda_radial_kms: Optional[float] = None,
+    andromeda_transverse_kms: Optional[float] = None,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Build combined initial conditions for MW + Andromeda collision.
@@ -267,15 +319,20 @@ def build_initial_conditions(
     mass : (2N,)   float64, particle masses in M_sun
     """
     # Andromeda is ~785 kpc away. Place MW at origin, Andromeda along +x.
-    # Radial velocity default: -110 km/s (approaching)
-    # Transverse velocity default: +17 km/s (van der Marel et al. 2012)
+    # Velocities come from a named scenario preset with optional overrides.
+    _, radial_kms, transverse_kms = resolve_andromeda_velocities(
+        scenario,
+        andromeda_radial_kms=andromeda_radial_kms,
+        andromeda_transverse_kms=andromeda_transverse_kms,
+    )
+
     mw_center = np.array([0.0, 0.0, 0.0])
     mw_vel = np.array([0.0, 0.0, 0.0])  # MW at rest in COM frame
 
     and_center = np.array([785.0, 0.0, 0.0])
     # Convert km/s → kpc/yr
-    v_rad = andromeda_radial_kms * KMS_TO_KPCYR
-    v_trans = andromeda_transverse_kms * KMS_TO_KPCYR
+    v_rad = radial_kms * KMS_TO_KPCYR
+    v_trans = transverse_kms * KMS_TO_KPCYR
     and_vel = np.array([v_rad, v_trans, 0.0])
 
     # MW disk inclination ~77°
