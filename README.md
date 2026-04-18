@@ -138,4 +138,28 @@ This replaces the previous single hardcoded transverse speed assumption.
 - first close-approach time at threshold 100 kpc (`first_close_approach_time_gyr`)
 - maximum energy drift percent (`max_energy_drift_pct`, when `--validate` is enabled)
 
+## Interactive Streamlit Visualization App
+
+You can explore simulation outputs interactively with a Streamlit dashboard.
+
+Install extra dependency:
+
+```bash
+python -m pip install streamlit
+```
+
+Run the app from the project folder:
+
+```bash
+streamlit run streamlit_app.py
+```
+
+Features:
+- choose any `.h5` simulation file in the current folder,
+- interactive time/snapshot slider,
+- projection switch (`xy`, `xz`, `yz`),
+- configurable particle downsampling for smooth rendering,
+- center-of-mass trajectories and separation-over-time chart,
+- metadata table and optional energy diagnostics when available.
+
 
