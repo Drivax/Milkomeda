@@ -70,6 +70,15 @@ def _format_metric_number(value: float, digits: int = 3) -> str:
     return f"{value:.{digits}f}"
 
 
+def _time_scale_config(unit: str) -> tuple[float, str]:
+    mapping = {
+        "yr": (1.0, "yr"),
+        "Myr": (1e6, "Myr"),
+        "Gyr": (1e9, "Gyr"),
+    }
+    return mapping[unit]
+
+
 def main() -> None:
     st.set_page_config(
         page_title="Milkomeda Explorer",
@@ -103,6 +112,7 @@ def main() -> None:
     with st.sidebar:
         st.header("View")
         projection = st.selectbox("Projection", ["xy", "xz", "yz"], index=0)
+        time_unit = st.selectbox("Time scale", ["yr", "Myr", "Gyr"], index=2)
         snap_idx = st.slider("Snapshot index", 0, n_snaps - 1, value=0)
         max_points = st.slider(
             "Max particles to draw per galaxy",
@@ -116,24 +126,27 @@ def main() -> None:
         lock_aspect = st.checkbox("Equal axis scale", value=True)
         framing = st.radio("Axis framing", ["COM-based", "Full extent"], index=0)
 
-    current_time_gyr = float(times[snap_idx] / 1e9)
+    time_scale, time_label = _time_scale_config(time_unit)
+    times_scaled = times / time_scale
+    current_time_scaled = float(times_scaled[snap_idx])
 
     min_sep_idx = int(np.argmin(separation))
     min_sep_kpc = float(separation[min_sep_idx])
-    min_sep_time_gyr = float(times[min_sep_idx] / 1e9)
+    min_sep_time_scaled = float(times_scaled[min_sep_idx])
 
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("Particles", f"{n_total:,}")
     col2.metric("Snapshots", f"{n_snaps:,}")
-    col3.metric("Current time (Gyr)", _format_metric_number(current_time_gyr, 3))
+    col3.metric(f"Current time ({time_label})", _format_metric_number(current_time_scaled, 3))
     col4.metric("Min COM separation (kpc)", _format_metric_number(min_sep_kpc, 2))
 
     info_cols = st.columns(3)
     info_cols[0].write(f"**File:** {selected_path}")
-    info_cols[1].write(f"**Min separation time:** {min_sep_time_gyr:.3f} Gyr")
+    info_cols[1].write(f"**Min separation time:** {min_sep_time_scaled:.3f} {time_label}")
     first_close = meta.get("first_close_approach_time_gyr", None)
     if isinstance(first_close, (int, float)) and first_close >= 0:
-        info_cols[2].write(f"**First close approach:** {first_close:.3f} Gyr")
+        first_close_scaled = float((first_close * 1e9) / time_scale)
+        info_cols[2].write(f"**First close approach:** {first_close_scaled:.3f} {time_label}")
     else:
         info_cols[2].write("**First close approach:** n/a")
 
@@ -234,7 +247,7 @@ def main() -> None:
     for spine in ax.spines.values():
         spine.set_edgecolor("white")
     ax.legend(loc="upper right", facecolor="#1b1f2a", edgecolor="white", labelcolor="white")
-    ax.set_title(f"Milkomeda snapshot {snap_idx + 1}/{n_snaps} at t={current_time_gyr:.3f} Gyr", color="white")
+    ax.set_title(f"Milkomeda snapshot {snap_idx + 1}/{n_snaps} at t={current_time_scaled:.3f} {time_label}", color="white")
 
     st.pyplot(fig, clear_figure=True)
 
@@ -243,10 +256,9 @@ def main() -> None:
     with chart_left:
         st.subheader("Center Separation vs Time")
         fig_sep, ax_sep = plt.subplots(figsize=(7.5, 3.3))
-        t_gyr = times / 1e9
-        ax_sep.plot(t_gyr, separation, c="#34a0a4", lw=1.8)
-        ax_sep.axvline(current_time_gyr, c="#ef476f", lw=1.1, ls="--")
-        ax_sep.set_xlabel("Time (Gyr)")
+        ax_sep.plot(times_scaled, separation, c="#34a0a4", lw=1.8)
+        ax_sep.axvline(current_time_scaled, c="#ef476f", lw=1.1, ls="--")
+        ax_sep.set_xlabel(f"Time ({time_label})")
         ax_sep.set_ylabel("Separation (kpc)")
         ax_sep.grid(alpha=0.25)
         st.pyplot(fig_sep, clear_figure=True)
@@ -270,11 +282,11 @@ def main() -> None:
         pe = sim["PE"]
         e_tot = ke + pe
         fig_e, ax_e = plt.subplots(figsize=(11, 3.5))
-        ax_e.plot(t_gyr, e_tot, label="E total", c="#06d6a0", lw=1.5)
-        ax_e.plot(t_gyr, ke, label="KE", c="#ffd166", lw=1.0, alpha=0.9)
-        ax_e.plot(t_gyr, pe, label="PE", c="#118ab2", lw=1.0, alpha=0.9)
-        ax_e.axvline(current_time_gyr, c="#ef476f", lw=1.1, ls="--")
-        ax_e.set_xlabel("Time (Gyr)")
+        ax_e.plot(times_scaled, e_tot, label="E total", c="#06d6a0", lw=1.5)
+        ax_e.plot(times_scaled, ke, label="KE", c="#ffd166", lw=1.0, alpha=0.9)
+        ax_e.plot(times_scaled, pe, label="PE", c="#118ab2", lw=1.0, alpha=0.9)
+        ax_e.axvline(current_time_scaled, c="#ef476f", lw=1.1, ls="--")
+        ax_e.set_xlabel(f"Time ({time_label})")
         ax_e.set_ylabel("Energy")
         ax_e.grid(alpha=0.2)
         ax_e.legend()
