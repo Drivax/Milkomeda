@@ -58,6 +58,8 @@ def parse_args() -> argparse.Namespace:
                    help="Andromeda radial velocity in km/s (default -110.0)")
     p.add_argument("--andromeda-transverse-kms", type=float, default=17.0,
                    help="Andromeda transverse velocity in km/s (default 17.0)")
+    p.add_argument("--initial-distance-kpc", type=float, default=785.0,
+                   help="Initial MW-M31 center separation in kpc (default 785.0)")
     p.add_argument("--output", type=str, default="trajectories_100.png",
                    help="Output image path (default trajectories_100.png)")
     p.add_argument("--dpi", type=int, default=180,
@@ -76,6 +78,7 @@ def run_one_simulation(
     seed: int,
     andromeda_radial_kms: float,
     andromeda_transverse_kms: float,
+    initial_distance_kpc: float,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Run one simulation and return sampled COM trajectories.
 
@@ -90,6 +93,7 @@ def run_one_simulation(
         seed=seed,
         andromeda_radial_kms=andromeda_radial_kms,
         andromeda_transverse_kms=andromeda_transverse_kms,
+        initial_distance_kpc=initial_distance_kpc,
     )
     n_total = pos.shape[0]
     n_half = n_total // 2
@@ -160,6 +164,7 @@ def main() -> None:
     print(f"method       : {args.method}")
     print(f"M31 v_rad    : {args.andromeda_radial_kms:.2f} km/s")
     print(f"M31 v_trans  : {args.andromeda_transverse_kms:.2f} km/s")
+    print(f"init dist    : {args.initial_distance_kpc:.2f} kpc")
     print(f"output       : {args.output}")
     print("=" * 64)
 
@@ -181,6 +186,7 @@ def main() -> None:
             seed=seed_i,
             andromeda_radial_kms=args.andromeda_radial_kms,
             andromeda_transverse_kms=args.andromeda_transverse_kms,
+            initial_distance_kpc=args.initial_distance_kpc,
         )
         if t_ref is None:
             t_ref = t_gyr

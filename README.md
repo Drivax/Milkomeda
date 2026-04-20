@@ -100,21 +100,21 @@ python -m pip install numpy scipy matplotlib astropy tqdm h5py pillow
 ### Single simulation (trajectory + collision)
 
 ```bash
-python simulate.py --N 500 --dt 5e6 --steps 1200 --softening 1.0 --method direct --output output_today_to_collision.h5
+python simulate.py --N 500 --dt 5e6 --steps 1200 --softening 1.0 --method direct --initial-distance-kpc 785 --output output_today_to_collision.h5
 python visualize.py --input output_today_to_collision.h5 --output milkomeda_today_to_collision.gif --fps 12 --hold-initial 28 --show-trajectories
 ```
 
 ### 100-run center-trajectory ensemble
 
 ```bash
-python simulate_100_center_trajectories.py --runs 100 --N 40 --steps 200 --dt 5e6 --sample-every 5 --method direct --output trajectories_100.png
+python simulate_100_center_trajectories.py --runs 100 --N 40 --steps 200 --dt 5e6 --sample-every 5 --method direct --initial-distance-kpc 785 --output trajectories_100.png
 ```
 
 ### Uncertainty sweep over Andromeda transverse velocity
 
 
 ```bash
-python sweep_transverse_velocity.py --vtrans-min 0 --vtrans-max 80 --vtrans-count 9 --runs-per-v 24 --N 120 --steps 500 --dt 5e6 --sample-every 5 --method auto --output-prefix vtrans_sweep
+python sweep_transverse_velocity.py --vtrans-min 0 --vtrans-max 80 --vtrans-count 9 --runs-per-v 24 --N 120 --steps 500 --dt 5e6 --sample-every 5 --method auto --initial-distance-kpc 785 --output-prefix vtrans_sweep
 ```
 
 Generated outputs:
@@ -122,13 +122,14 @@ Generated outputs:
 - `vtrans_sweep_raw.npz` (raw sampled traces and metrics)
 - `vtrans_sweep_bands.png` (publishable-style uncertainty bands)
 
-### New velocity controls
+### New velocity and distance controls
 
-Both `simulate.py` and `simulate_100_center_trajectories.py` now support:
+`simulate.py`, `simulate_100_center_trajectories.py`, and `sweep_transverse_velocity.py` support:
 - `--andromeda-radial-kms` (default `-110.0`)
 - `--andromeda-transverse-kms` (default `17.0`)
+- `--initial-distance-kpc` (default `785.0`)
 
-This replaces the previous single hardcoded transverse speed assumption.
+This replaces the previous hardcoded initial separation and transverse speed assumptions.
 
 ### Validation metrics saved to simulation output
 

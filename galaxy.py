@@ -308,6 +308,7 @@ def build_initial_conditions(
     scenario: str = "baseline",
     andromeda_radial_kms: Optional[float] = None,
     andromeda_transverse_kms: Optional[float] = None,
+    initial_distance_kpc: float = 785.0,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Build combined initial conditions for MW + Andromeda collision.
@@ -318,7 +319,10 @@ def build_initial_conditions(
     vel  : (2N, 3) float64, velocities in kpc/yr
     mass : (2N,)   float64, particle masses in M_sun
     """
-    # Andromeda is ~785 kpc away. Place MW at origin, Andromeda along +x.
+    if initial_distance_kpc <= 0.0:
+        raise ValueError("initial_distance_kpc must be positive")
+
+    # Place MW at origin, Andromeda along +x.
     # Velocities come from a named scenario preset with optional overrides.
     _, radial_kms, transverse_kms = resolve_andromeda_velocities(
         scenario,
@@ -329,7 +333,7 @@ def build_initial_conditions(
     mw_center = np.array([0.0, 0.0, 0.0])
     mw_vel = np.array([0.0, 0.0, 0.0])  # MW at rest in COM frame
 
-    and_center = np.array([785.0, 0.0, 0.0])
+    and_center = np.array([float(initial_distance_kpc), 0.0, 0.0])
     # Convert km/s → kpc/yr
     v_rad = radial_kms * KMS_TO_KPCYR
     v_trans = transverse_kms * KMS_TO_KPCYR

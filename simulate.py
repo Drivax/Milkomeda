@@ -54,6 +54,8 @@ def parse_args() -> argparse.Namespace:
                    help="Override scenario radial velocity in km/s")
     p.add_argument("--andromeda-transverse-kms", type=float, default=None,
                    help="Override scenario transverse velocity in km/s")
+    p.add_argument("--initial-distance-kpc", type=float, default=785.0,
+                   help="Initial MW-M31 center separation in kpc (default 785.0)")
     p.add_argument("--validate", action="store_true",
                    help="Compute energy at each snapshot for validation")
     p.add_argument("--method", type=str, default="auto",
@@ -71,7 +73,8 @@ def create_output_file(path: str, N_total: int, n_snapshots: int,
                        args: argparse.Namespace,
                        scenario_name: str,
                        andromeda_radial_kms: float,
-                       andromeda_transverse_kms: float) -> h5py.File:
+                       andromeda_transverse_kms: float,
+                       initial_distance_kpc: float) -> h5py.File:
     f = h5py.File(path, "w")
     meta = f.create_group("metadata")
     meta.attrs["N_per_galaxy"] = args.N
@@ -84,6 +87,7 @@ def create_output_file(path: str, N_total: int, n_snapshots: int,
     meta.attrs["scenario"] = scenario_name
     meta.attrs["andromeda_radial_kms"] = andromeda_radial_kms
     meta.attrs["andromeda_transverse_kms"] = andromeda_transverse_kms
+    meta.attrs["initial_distance_kpc"] = initial_distance_kpc
 
     f.create_dataset("pos",  shape=(n_snapshots, N_total, 3), dtype="float32")
     f.create_dataset("vel",  shape=(n_snapshots, N_total, 3), dtype="float32")
@@ -141,6 +145,7 @@ def main() -> None:
     print(f"  Scenario      : {scenario_name}")
     print(f"  M31 v_rad     : {radial_kms:.2f} km/s")
     print(f"  M31 v_trans   : {transverse_kms:.2f} km/s")
+    print(f"  Initial dist  : {args.initial_distance_kpc:.2f} kpc")
     print(f"  Output        : {args.output}")
     print("=" * 60)
 
@@ -153,6 +158,7 @@ def main() -> None:
         scenario=scenario_name,
         andromeda_radial_kms=radial_kms,
         andromeda_transverse_kms=transverse_kms,
+        initial_distance_kpc=args.initial_distance_kpc,
     )
     N_total = pos.shape[0]
     N_half = N_total // 2
@@ -187,6 +193,7 @@ def main() -> None:
         scenario_name=scenario_name,
         andromeda_radial_kms=radial_kms,
         andromeda_transverse_kms=transverse_kms,
+        initial_distance_kpc=args.initial_distance_kpc,
     )
     hf["mass"][:] = mass
 
