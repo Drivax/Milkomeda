@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "deterministically_replayed": [
+    "current_estimate",
+    "high_transverse"
+  ],
+  "portfolio_figures_verified": 3,
+  "animation_frames": 51
+}

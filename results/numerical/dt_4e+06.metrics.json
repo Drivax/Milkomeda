@@ -1,0 +1,16 @@
+{
+  "min_com_separation_kpc": 134.49550300022165,
+  "min_com_separation_time_gyr": 4.48,
+  "first_close_approach_time_gyr": null,
+  "final_com_separation_kpc": 320.53831297535066,
+  "closest_at_boundary": false,
+  "close_threshold_kpc": 100.0,
+  "max_energy_drift_pct": 0.32845995913620685,
+  "max_momentum_drift_relative": 4.2938553202656333e-16,
+  "max_com_drift_kpc": 3.13616723244804e-13,
+  "momentum_scale": 510942.3717429374,
+  "duration_gyr": 6.0,
+  "runtime_s": 0.8604085999540985,
+  "method_used": "direct",
+  "sampled_diagnostics": true
+}

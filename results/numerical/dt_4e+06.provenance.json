@@ -1,0 +1,29 @@
+{
+  "schema_version": 2,
+  "git_commit": "9f1811304f166d45dedf121f615c890494d7d425",
+  "git_dirty": true,
+  "python": "3.12.14",
+  "versions": {
+    "numpy": "2.5.4",
+    "h5py": "3.16.0",
+    "matplotlib": "3.11.2",
+    "streamlit": "1.65.0"
+  },
+  "source_sha256": {
+    "galaxy.py": "fb56b9e53af409b5d42d19efbdce9fdfc3b9065bac06127d40b53da609159515",
+    "integrator.py": "1a38acd7b6e3c0ef1d9e3870ae664c0d6e16471271acb6ae8575799919c3b1f0",
+    "octree.py": "6bc08772ec30583589f5b81ffe72b4b9b790428973e1671a61636e9f13b2bb9f",
+    "simulate.py": "ae3ea27c44ee222b5c1cb2364111ea28233dd2b18908e2008f68283b58e51259",
+    "simulate_100_center_trajectories.py": "e1ffcdd4114cf523361a6a6039450fec3a8e5c3a030aa628d9437e762f419f71",
+    "streamlit_app.py": "e206bef6402f54663a98f713f21df8e87c00fa8a7ba30dc818cbe90bf247dbea",
+    "sweep_transverse_velocity.py": "6d4cf4a427334ee06b607e9c3367b3718f64613b716ad2e5b5257b7ae3c16683",
+    "visualize.py": "a690ab368c0b96d6e7d2b31571d89b5fc6451968051a7d01a095c041ca49c8f7",
+    "src\\__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "src\\config.py": "993ec1737d390def163a43bc8f157722693da6fab2bbf64df8a6ec9df387af26",
+    "src\\experiments.py": "92574ce4a79c12daa2ed335c505f245cc2684575de35190e91b4c1d61f572e05",
+    "src\\metrics.py": "0efead6eb32548ee6561943f1c976d6022e46f67541afc9b0b02f08e1d3c28f1",
+    "src\\simulation.py": "714ff21cd1d074885ff08306aa5dd8ce43b3b94e0e80403f0f40cdba8f6c8a09",
+    "src\\sweeps.py": "900896b032793f233f97d43fd0cf8ff5b6f391bb928b66abd960e355848db947",
+    "src\\visualization.py": "180b1ec8eb4746f95b0aa4e2cebaccbdd4e4380ab5bb39e4ac1654c44e7188c6"
+  }
+}

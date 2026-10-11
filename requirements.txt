@@ -1,0 +1,6 @@
+numpy==2.5.4
+matplotlib==3.11.2
+h5py==3.16.0
+pillow==12.3.0
+streamlit==1.65.0
+pytest==9.1.1

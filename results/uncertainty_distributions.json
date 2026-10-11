@@ -1,0 +1,10 @@
+{
+  "andromeda_transverse_kms": {
+    "mean": 17.0,
+    "std": 20.0
+  },
+  "initial_distance_kpc": {
+    "mean": 785.0,
+    "std": 25.0
+  }
+}

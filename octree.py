@@ -15,7 +15,7 @@ Units: kpc, M_sun, yr  (G = 4.498e-24 kpc^3 M_sun^-1 yr^-2)
 from __future__ import annotations
 import numpy as np
 
-G_CONST = 4.498e-24  # kpc^3 / (M_sun * yr^2)
+from src.config import G_CONST
 
 
 class OctreeNode:
@@ -113,7 +113,8 @@ def _acc_particle(node: OctreeNode, p_pos: np.ndarray,
 	dr = node.com - p_pos
 	dist2 = np.dot(dr, dr) + softening ** 2
 	dist = np.sqrt(dist2)
-	if node.is_leaf or node.size / dist < theta:
+	contains = np.all(np.abs(p_pos - node.center) <= node.size / 2)
+	if node.is_leaf or (not contains and node.size / dist < theta):
 		return G_CONST * node.mass * dr / (dist2 * dist)
 	else:
 		acc = np.zeros(3)

@@ -1,0 +1,34 @@
+{
+  "base_config": {
+    "N": 40,
+    "dt": 2000000.0,
+    "steps": 3000,
+    "softening": 5.0,
+    "method": "auto",
+    "theta": 0.5,
+    "sample_every": 20,
+    "frame_every": 3,
+    "seed": 42,
+    "mw_mass": 1060000000000.0,
+    "m31_mass": 1600000000000.0,
+    "initial_distance_kpc": 785.0,
+    "andromeda_radial_kms": -110.0,
+    "andromeda_transverse_kms": 17.0,
+    "mw_radius_kpc": 20.0,
+    "m31_radius_kpc": 25.0,
+    "mw_inclination_deg": 77.0,
+    "m31_inclination_deg": 0.0,
+    "dispersion": 0.15,
+    "close_threshold_kpc": 100.0,
+    "validate": true
+  },
+  "overrides": {
+    "steps": 20,
+    "sample_every": 20,
+    "validate": false,
+    "method": "direct"
+  },
+  "repetitions": 3,
+  "timing": "Initialization + integration + sampled COM diagnostics; no IO/energy",
+  "note": "Short runs measure scaling, not long-horizon physical accuracy"
+}
